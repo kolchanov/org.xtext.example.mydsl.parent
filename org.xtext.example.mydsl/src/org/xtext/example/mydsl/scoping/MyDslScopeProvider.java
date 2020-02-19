@@ -31,9 +31,10 @@ public class MyDslScopeProvider extends AbstractMyDslScopeProvider {
 	public IScope getScope(EObject context, EReference ref) {
 
 		if (ref == MyDslPackage.Literals.VALUE__VALUE1) {
- 			if (context instanceof Entity) {
+ 			if (context instanceof Rule) {
  				// Entity from the same has valid name value
  				// Entity from different file has null name value
+ 				Entity entity = ((Rule) context).getEntity();
 				System.out.println (((Entity) context).getName());
 			}
 		}	

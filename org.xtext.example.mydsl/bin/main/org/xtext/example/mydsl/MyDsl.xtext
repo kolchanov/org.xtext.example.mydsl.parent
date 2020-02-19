@@ -29,13 +29,6 @@ RecommendedValueItem:
         name=STRING
 ;
 
-//ExtString:
-//	STRING
-//;
-
-
-
-
 Rule:
         'Selected' 'value' 'for' entity=[Entity|FQN] 'in' '[' (values+=Value)? ']'
 ;
