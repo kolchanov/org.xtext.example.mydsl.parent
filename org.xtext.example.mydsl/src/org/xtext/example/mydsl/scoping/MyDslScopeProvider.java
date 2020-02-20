@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
@@ -15,8 +16,12 @@ import org.eclipse.xtext.scoping.IScope;
 import org.eclipse.xtext.scoping.Scopes;
 import org.xtext.example.mydsl.myDsl.Dictionary;
 import org.xtext.example.mydsl.myDsl.Entity;
+import org.xtext.example.mydsl.myDsl.Import;
+import org.xtext.example.mydsl.myDsl.Model;
 import org.xtext.example.mydsl.myDsl.MyDslPackage;
 import org.xtext.example.mydsl.myDsl.Rule;
+import org.xtext.example.mydsl.myDsl.Section;
+import org.xtext.example.mydsl.myDsl.Value;
 
 /**
  * This class contains custom scoping description.
@@ -30,15 +35,58 @@ public class MyDslScopeProvider extends AbstractMyDslScopeProvider {
 	@Override
 	public IScope getScope(EObject context, EReference ref) {
 
-		if (ref == MyDslPackage.Literals.VALUE__VALUE1) {
+		if (ref == MyDslPackage.Literals.RULE__ENTITY) {
+			if (context instanceof Rule) {
+				Rule rule = (Rule) context;
+				Model model = (Model)EcoreUtil2.getRootContainer(context);
+ 				List<Entity> entities = model.getImports().stream()
+ 				.flatMap(e -> e.getImportURI().getItems().stream())
+ 				.filter(e->e instanceof Entity)
+ 				.map (e -> (Entity) e)
+ 				.collect(Collectors.toList())
+ 				;
+ 			
+ 				return Scopes.scopeFor(entities);
+				
+			}
+			
+		}
+		
+		if (ref == MyDslPackage.Literals.VALUE__VALUE1 || 
+				ref == MyDslPackage.Literals.VALUE__VALUE2) {
  			if (context instanceof Rule) {
  				// Entity from the same has valid name value
  				// Entity from different file has null name value
  				Entity entity = ((Rule) context).getEntity();
-				System.out.println (((Entity) context).getName());
+ 				return getScopeByEntityName(context, ref, entity);
+ 
 			}
+ 			
+ 			if (context instanceof Value) {
+ 				Rule rule = (Rule)context.eContainer();
+ 				return getScopeByEntityName(context, ref, rule.getEntity());
+ 			}
 		}	
 		
+		return super.getScope(context, ref);
+	}
+
+	private IScope getScopeByEntityName(EObject context, EReference ref, Entity entity) {
+		String name = entity.getName();
+		
+		Model model = (Model)EcoreUtil2.getRootContainer(context);
+		
+		Optional<Dictionary> imp = model.getImports().stream()
+		.flatMap(e -> e.getImportURI().getItems().stream())
+		.filter(e->e instanceof Dictionary)
+		.map (e -> (Dictionary) e)
+		.filter( e-> name.equals(e.getEntity().getName()))
+		.findFirst()
+		;
+		
+		if (imp.isPresent()) {
+			return Scopes.scopeFor(imp.get().getValues());
+		} 				
 		return super.getScope(context, ref);
 	}
 	
